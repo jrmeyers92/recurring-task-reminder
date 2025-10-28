@@ -10,51 +10,35 @@ const isPublicRoute = createRouteMatcher([
   "/api/webhooks(.*)",
 ]);
 
-// Define API routes that need protection
-const isProtectedApiRoute = createRouteMatcher([
-  "/api/protected(.*)",
-  // Add other protected API routes
-]);
+const isOnboardingRoute = createRouteMatcher(["/onboarding"]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const path = req.nextUrl.pathname;
+  const { userId, sessionClaims, redirectToSignIn } = await auth();
 
-  // Handle API routes first
-  if (path.startsWith("/api")) {
-    // Allow public API routes
-    if (path.startsWith("/api/webhooks")) {
-      return NextResponse.next();
-    }
-
-    // Protect specific API routes if needed
-    if (isProtectedApiRoute(req)) {
-      const { userId } = await auth();
-      if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-    }
-
-    return NextResponse.next();
-  }
-
-  // Skip middleware for Next.js internals and static files
-  if (path.startsWith("/_next")) {
-    return NextResponse.next();
-  }
-
-  // For public routes, don't require authentication
+  // Allow public routes without authentication
   if (isPublicRoute(req)) {
     return NextResponse.next();
   }
 
-  // Get auth info for protected routes
-  const { userId, sessionClaims } = await auth();
-
-  // If not authenticated and trying to access protected route
-  if (!userId && !isPublicRoute(req)) {
-    return NextResponse.redirect(new URL("/sign-in", req.url));
+  // If not authenticated, redirect to sign-in
+  if (!userId) {
+    return redirectToSignIn({ returnBackUrl: req.url });
   }
 
+  // User is authenticated - check onboarding status
+  const onboardingComplete = sessionClaims?.metadata?.onboardingComplete;
+
+  // If on onboarding page, always allow access
+  if (isOnboardingRoute(req)) {
+    return NextResponse.next();
+  }
+
+  // If not on onboarding page but onboarding not complete, redirect to onboarding
+  if (!onboardingComplete) {
+    return NextResponse.redirect(new URL("/onboarding", req.url));
+  }
+
+  // User is authenticated and onboarded, allow access
   return NextResponse.next();
 });
 
