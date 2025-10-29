@@ -19,7 +19,7 @@ export type Database = {
           created_at: string | null;
           email: string;
           id: string;
-          notify_via: string | null;
+          notify_via: Database["public"]["Enums"]["notify_method"] | null;
           phone: string | null;
           updated_at: string | null;
         };
@@ -27,7 +27,7 @@ export type Database = {
           created_at?: string | null;
           email: string;
           id: string;
-          notify_via?: string | null;
+          notify_via?: Database["public"]["Enums"]["notify_method"] | null;
           phone?: string | null;
           updated_at?: string | null;
         };
@@ -35,7 +35,7 @@ export type Database = {
           created_at?: string | null;
           email?: string;
           id?: string;
-          notify_via?: string | null;
+          notify_via?: Database["public"]["Enums"]["notify_method"] | null;
           phone?: string | null;
           updated_at?: string | null;
         };
@@ -110,18 +110,21 @@ export type Database = {
           id: string;
           tag: string;
           task_id: string;
+          user_id: string;
         };
         Insert: {
           created_at?: string | null;
           id?: string;
           tag: string;
           task_id: string;
+          user_id: string;
         };
         Update: {
           created_at?: string | null;
           id?: string;
           tag?: string;
           task_id?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -151,22 +154,33 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "task_scheduler_upcoming_tasks";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "task_scheduler_task_tags_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "task_scheduler_profiles";
+            referencedColumns: ["id"];
           }
         ];
       };
       task_scheduler_tasks: {
         Row: {
           active: boolean | null;
+          category: Database["public"]["Enums"]["task_category"] | null;
+          completion_token: string | null;
           created_at: string | null;
           day_of_month: number | null;
           description: string | null;
-          frequency_type: string;
+          frequency_type: Database["public"]["Enums"]["frequency_type"];
           frequency_value: number;
           id: string;
           last_completed_at: string | null;
           last_notified_at: string | null;
           next_due_date: string;
-          notify_via: string | null;
+          notify_via: Database["public"]["Enums"]["notify_method"] | null;
+          reminder_lead_time_days: number | null;
+          snoozed_until: string | null;
           start_date: string;
           title: string;
           updated_at: string | null;
@@ -174,16 +188,20 @@ export type Database = {
         };
         Insert: {
           active?: boolean | null;
+          category?: Database["public"]["Enums"]["task_category"] | null;
+          completion_token?: string | null;
           created_at?: string | null;
           day_of_month?: number | null;
           description?: string | null;
-          frequency_type: string;
+          frequency_type: Database["public"]["Enums"]["frequency_type"];
           frequency_value: number;
           id?: string;
           last_completed_at?: string | null;
           last_notified_at?: string | null;
           next_due_date: string;
-          notify_via?: string | null;
+          notify_via?: Database["public"]["Enums"]["notify_method"] | null;
+          reminder_lead_time_days?: number | null;
+          snoozed_until?: string | null;
           start_date: string;
           title: string;
           updated_at?: string | null;
@@ -191,16 +209,20 @@ export type Database = {
         };
         Update: {
           active?: boolean | null;
+          category?: Database["public"]["Enums"]["task_category"] | null;
+          completion_token?: string | null;
           created_at?: string | null;
           day_of_month?: number | null;
           description?: string | null;
-          frequency_type?: string;
+          frequency_type?: Database["public"]["Enums"]["frequency_type"];
           frequency_value?: number;
           id?: string;
           last_completed_at?: string | null;
           last_notified_at?: string | null;
           next_due_date?: string;
-          notify_via?: string | null;
+          notify_via?: Database["public"]["Enums"]["notify_method"] | null;
+          reminder_lead_time_days?: number | null;
+          snoozed_until?: string | null;
           start_date?: string;
           title?: string;
           updated_at?: string | null;
@@ -221,23 +243,28 @@ export type Database = {
       task_scheduler_overdue_tasks: {
         Row: {
           active: boolean | null;
+          category: Database["public"]["Enums"]["task_category"] | null;
+          completion_token: string | null;
           created_at: string | null;
           day_of_month: number | null;
           days_overdue: number | null;
           description: string | null;
           email: string | null;
-          frequency_type: string | null;
+          frequency_type: Database["public"]["Enums"]["frequency_type"] | null;
           frequency_value: number | null;
           id: string | null;
           last_completed_at: string | null;
           last_notified_at: string | null;
           next_due_date: string | null;
-          notify_via: string | null;
+          notify_via: Database["public"]["Enums"]["notify_method"] | null;
+          phone: string | null;
+          reminder_lead_time_days: number | null;
+          snoozed_until: string | null;
           start_date: string | null;
           title: string | null;
           updated_at: string | null;
           user_id: string | null;
-          user_notify_via: string | null;
+          user_notify_via: Database["public"]["Enums"]["notify_method"] | null;
         };
         Relationships: [
           {
@@ -252,23 +279,27 @@ export type Database = {
       task_scheduler_tasks_due_today: {
         Row: {
           active: boolean | null;
+          category: Database["public"]["Enums"]["task_category"] | null;
+          completion_token: string | null;
           created_at: string | null;
           day_of_month: number | null;
           description: string | null;
           email: string | null;
-          frequency_type: string | null;
+          frequency_type: Database["public"]["Enums"]["frequency_type"] | null;
           frequency_value: number | null;
           id: string | null;
           last_completed_at: string | null;
           last_notified_at: string | null;
           next_due_date: string | null;
-          notify_via: string | null;
+          notify_via: Database["public"]["Enums"]["notify_method"] | null;
           phone: string | null;
+          reminder_lead_time_days: number | null;
+          snoozed_until: string | null;
           start_date: string | null;
           title: string | null;
           updated_at: string | null;
           user_id: string | null;
-          user_notify_via: string | null;
+          user_notify_via: Database["public"]["Enums"]["notify_method"] | null;
         };
         Relationships: [
           {
@@ -283,23 +314,28 @@ export type Database = {
       task_scheduler_upcoming_tasks: {
         Row: {
           active: boolean | null;
+          category: Database["public"]["Enums"]["task_category"] | null;
+          completion_token: string | null;
           created_at: string | null;
           day_of_month: number | null;
           days_until_due: number | null;
           description: string | null;
           email: string | null;
-          frequency_type: string | null;
+          frequency_type: Database["public"]["Enums"]["frequency_type"] | null;
           frequency_value: number | null;
           id: string | null;
           last_completed_at: string | null;
           last_notified_at: string | null;
           next_due_date: string | null;
-          notify_via: string | null;
+          notify_via: Database["public"]["Enums"]["notify_method"] | null;
+          phone: string | null;
+          reminder_lead_time_days: number | null;
+          snoozed_until: string | null;
           start_date: string | null;
           title: string | null;
           updated_at: string | null;
           user_id: string | null;
-          user_notify_via: string | null;
+          user_notify_via: Database["public"]["Enums"]["notify_method"] | null;
         };
         Relationships: [
           {
@@ -314,6 +350,7 @@ export type Database = {
     };
     Functions: {
       get_clerk_user_id: { Args: never; Returns: string };
+
       task_scheduler_calculate_next_due_date: {
         Args: {
           p_day_of_month?: number;
@@ -324,7 +361,22 @@ export type Database = {
         Returns: string;
       };
     };
-    Enums: {};
+    Enums: {
+      frequency_type: "daily" | "weekly" | "monthly" | "yearly" | "custom";
+      notify_method: "email" | "sms" | "both";
+      task_category:
+        | "home"
+        | "vehicle"
+        | "finance"
+        | "health"
+        | "pet"
+        | "garden"
+        | "appliance"
+        | "insurance"
+        | "subscription"
+        | "maintenance"
+        | "other";
+    };
     CompositeTypes: {
       [_ in never]: never;
     };
@@ -453,7 +505,23 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      frequency_type: ["daily", "weekly", "monthly", "yearly", "custom"],
+      notify_method: ["email", "sms", "both"],
+      task_category: [
+        "home",
+        "vehicle",
+        "finance",
+        "health",
+        "pet",
+        "garden",
+        "appliance",
+        "insurance",
+        "subscription",
+        "maintenance",
+        "other",
+      ],
+    },
   },
 } as const;
 
@@ -463,12 +531,29 @@ export type Profile =
 export type TaskCompletion =
   Database["public"]["Tables"]["task_scheduler_task_completions"]["Row"];
 
-// Type-safe insert types
 export type TaskInsert =
   Database["public"]["Tables"]["task_scheduler_tasks"]["Insert"];
 export type ProfileInsert =
   Database["public"]["Tables"]["task_scheduler_profiles"]["Insert"];
 
-// Type-safe update types
 export type TaskUpdate =
   Database["public"]["Tables"]["task_scheduler_tasks"]["Update"];
+
+// Add these to your types file for convenience
+export type TaskTag =
+  Database["public"]["Tables"]["task_scheduler_task_tags"]["Row"];
+export type TaskTagInsert =
+  Database["public"]["Tables"]["task_scheduler_task_tags"]["Insert"];
+
+// Enum types for type safety
+export type NotifyMethod = Database["public"]["Enums"]["notify_method"];
+export type FrequencyType = Database["public"]["Enums"]["frequency_type"];
+export type TaskCategory = Database["public"]["Enums"]["task_category"];
+
+// View types (for when you query the views)
+export type UpcomingTask =
+  Database["public"]["Views"]["task_scheduler_upcoming_tasks"]["Row"];
+export type TaskDueToday =
+  Database["public"]["Views"]["task_scheduler_tasks_due_today"]["Row"];
+export type OverdueTask =
+  Database["public"]["Views"]["task_scheduler_overdue_tasks"]["Row"];
