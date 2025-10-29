@@ -7,6 +7,8 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks(.*)",
+  "/api/cron(.*)", // Add this line
+  "/api/tasks/complete(.*)", // Add this too for email completion links
 ]);
 
 const isOnboardingRoute = createRouteMatcher(["/onboarding"]);
