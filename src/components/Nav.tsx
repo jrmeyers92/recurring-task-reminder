@@ -23,7 +23,7 @@ const Nav = () => {
           className="flex gap-2 items-center text-xl font-bold justify-center"
         >
           <Bell className="text-primary" size={28} />
-          <span>TASK TRACKER</span>
+          <span>TASK REMINDER</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -69,7 +69,7 @@ const Nav = () => {
             </SheetTrigger>
             <SheetContent>
               <SheetHeader>
-                <SheetTitle>TASK TRACKER</SheetTitle>
+                <SheetTitle>TASK REMINDER</SheetTitle>
                 <SheetDescription>
                   Create, Schedule, & Complete Tasks..
                 </SheetDescription>
