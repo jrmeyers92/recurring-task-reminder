@@ -136,38 +136,6 @@ export async function completeTask(taskId: string): Promise<ActionResponse> {
   }
 }
 
-export async function snoozeTask(
-  taskId: string,
-  snoozedUntil: string
-): Promise<ActionResponse> {
-  try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return { success: false, error: "Unauthorized" };
-    }
-
-    const supabase = await createAdminClient();
-
-    const { error } = await supabase
-      .from("task_scheduler_tasks")
-      .update({ snoozed_until: snoozedUntil })
-      .eq("id", taskId)
-      .eq("user_id", userId);
-
-    if (error) {
-      console.error("Snooze error:", error);
-      return { success: false, error: "Failed to snooze task" };
-    }
-
-    revalidatePath("/dashboard");
-    return { success: true };
-  } catch (error) {
-    console.error("Error snoozing task:", error);
-    return { success: false, error: "An unexpected error occurred" };
-  }
-}
-
 export async function deleteTask(taskId: string): Promise<ActionResponse> {
   try {
     const { userId } = await auth();
@@ -260,4 +228,112 @@ export async function updateTask(
     console.error("Error updating task:", error);
     return { success: false, error: "An unexpected error occurred" };
   }
+}
+
+export async function snoozeTask(taskId: string, snoozeUntil: string) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const supabase = await createAdminClient();
+
+  const { error } = await supabase
+    .from("task_scheduler_tasks")
+    .update({
+      snoozed_until: snoozeUntil,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", taskId)
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("Error snoozing task:", error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function unsnoozeTask(taskId: string) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const supabase = await createAdminClient();
+
+  const { error } = await supabase
+    .from("task_scheduler_tasks")
+    .update({
+      snoozed_until: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", taskId)
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("Error unsnoozing task:", error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function pauseTask(taskId: string) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const supabase = await createAdminClient();
+
+  const { error } = await supabase
+    .from("task_scheduler_tasks")
+    .update({
+      paused: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", taskId)
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("Error pausing task:", error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function resumeTask(taskId: string) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const supabase = await createAdminClient();
+
+  const { error } = await supabase
+    .from("task_scheduler_tasks")
+    .update({
+      paused: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", taskId)
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("Error resuming task:", error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return { success: true };
 }

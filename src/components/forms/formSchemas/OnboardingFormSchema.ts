@@ -16,7 +16,7 @@ export const onboardingFormSchema = z.object({
         message: "Please enter a valid 10-digit phone number",
       }
     ),
-  notify_via: z.enum(["email", "sms", "both"], {
+  notify_via: z.enum(["email", "sms", "both", "none"], {
     message: "Please select a notification preference",
   }),
 });

@@ -207,9 +207,23 @@ export function TaskHistoryDialog({
   };
 
   const calculateStats = () => {
+    if (completions.length === 0) {
+      return {
+        totalCompletions: 0,
+        expectedCompletions: 0,
+        completionRate: 0,
+        missedTasks: 0,
+      };
+    }
+
     const startDate = new Date(taskStartDate);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const daysSinceStart = differenceInDays(today, startDate);
+
+    // TODO: Subtract snoozed/paused days from daysSinceStart
+    // This would require tracking snooze history, which you don't have yet
 
     // Calculate expected completions based on frequency
     let expectedCompletions = 0;

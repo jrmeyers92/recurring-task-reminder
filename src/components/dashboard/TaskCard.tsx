@@ -1,6 +1,12 @@
 "use client";
 
-import { completeTask, deleteTask } from "@/actions/taskActions";
+import {
+  completeTask,
+  deleteTask,
+  pauseTask,
+  resumeTask,
+  unsnoozeTask,
+} from "@/actions/taskActions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,24 +31,29 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Task } from "@/types/database.types";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, isPast } from "date-fns";
 import {
+  Bed,
   Bell,
   Calendar,
   CheckCircle2,
   Mail,
   MessageSquare,
   MoreVertical,
+  Pause,
   Pencil,
+  Play,
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { EditTaskDialog } from "./EditTaskDialog";
+import { SnoozeTaskDialog } from "./SnoozeTaskDialog";
 import { TaskHistoryDialog } from "./TaskHistoryDialog";
 
 interface TaskCardProps {
@@ -68,10 +79,16 @@ export function TaskCard({ task, variant }: TaskCardProps) {
   const [isPending, startTransition] = useTransition();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showSnoozeDialog, setShowSnoozeDialog] = useState(false);
   const router = useRouter();
 
   const dueDate = new Date(task.next_due_date);
   const formattedDate = formatDistanceToNow(dueDate, { addSuffix: true });
+
+  const isSnoozed = !!(
+    task.snoozed_until && !isPast(new Date(task.snoozed_until))
+  );
+  const isPaused = !!task.paused;
 
   const getFrequencyText = () => {
     const { frequency_type, frequency_value } = task;
@@ -139,6 +156,54 @@ export function TaskCard({ task, variant }: TaskCardProps) {
     });
   };
 
+  const handlePause = () => {
+    startTransition(async () => {
+      const result = await pauseTask(task.id);
+      if (result.success) {
+        toast.success("Task paused", {
+          description: "This task is now paused and won't send notifications.",
+        });
+        router.refresh();
+      } else {
+        toast.error("Failed to pause task", {
+          description: result.error,
+        });
+      }
+    });
+  };
+
+  const handleResume = () => {
+    startTransition(async () => {
+      const result = await resumeTask(task.id);
+      if (result.success) {
+        toast.success("Task resumed", {
+          description: "This task is now active again.",
+        });
+        router.refresh();
+      } else {
+        toast.error("Failed to resume task", {
+          description: result.error,
+        });
+      }
+    });
+  };
+
+  const handleUnsnooze = () => {
+    startTransition(async () => {
+      const result = await unsnoozeTask(task.id);
+      if (result.success) {
+        toast.success("Task unsnoozed", {
+          description: "This task is now active again.",
+        });
+        router.refresh();
+      } else {
+        toast.error("Failed to unsnooze task", {
+          description: result.error,
+        });
+      }
+    });
+  };
+
   const variantStyles = {
     overdue: "border-destructive/50 bg-destructive/5",
     today: "border-primary/50 bg-primary/5",
@@ -147,7 +212,11 @@ export function TaskCard({ task, variant }: TaskCardProps) {
 
   return (
     <>
-      <Card className={variantStyles[variant]}>
+      <Card
+        className={`${variantStyles[variant]} ${
+          isPaused || isSnoozed ? "opacity-60" : ""
+        }`}
+      >
         <CardHeader>
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -158,6 +227,18 @@ export function TaskCard({ task, variant }: TaskCardProps) {
                   </span>
                 )}
                 <CardTitle className="text-lg">{task.title}</CardTitle>
+                {isPaused && (
+                  <Badge variant="secondary" className="ml-2">
+                    <Pause size={12} className="mr-1" />
+                    Paused
+                  </Badge>
+                )}
+                {isSnoozed && (
+                  <Badge variant="secondary" className="ml-2">
+                    <Bed size={12} className="mr-1" />
+                    Snoozed
+                  </Badge>
+                )}
               </div>
               <CardDescription className="mt-1">
                 {task.description || "No description"}
@@ -174,6 +255,36 @@ export function TaskCard({ task, variant }: TaskCardProps) {
                   <Pencil size={16} className="mr-2" />
                   Edit
                 </DropdownMenuItem>
+
+                {isSnoozed ? (
+                  <DropdownMenuItem
+                    onClick={handleUnsnooze}
+                    disabled={isPending}
+                  >
+                    <Play size={16} className="mr-2" />
+                    Unsnooze
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => setShowSnoozeDialog(true)}>
+                    <Bed size={16} className="mr-2" />
+                    Snooze
+                  </DropdownMenuItem>
+                )}
+
+                {isPaused ? (
+                  <DropdownMenuItem onClick={handleResume} disabled={isPending}>
+                    <Play size={16} className="mr-2" />
+                    Resume
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={handlePause} disabled={isPending}>
+                    <Pause size={16} className="mr-2" />
+                    Pause
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuSeparator />
+
                 <DropdownMenuItem
                   onClick={() => setShowDeleteDialog(true)}
                   className="text-destructive"
@@ -190,6 +301,11 @@ export function TaskCard({ task, variant }: TaskCardProps) {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar size={14} />
             <span>Due {formattedDate}</span>
+            {isSnoozed && (
+              <span className="text-xs">
+                (Snoozed until {format(new Date(task.snoozed_until!), "PP")})
+              </span>
+            )}
           </div>
           <div className="flex gap-2 flex-wrap">
             {task.category && (
@@ -218,7 +334,7 @@ export function TaskCard({ task, variant }: TaskCardProps) {
         <CardFooter className="flex gap-2">
           <Button
             onClick={handleComplete}
-            disabled={isPending}
+            disabled={isPending || isPaused || isSnoozed}
             className="flex-1"
             variant={variant === "overdue" ? "destructive" : "default"}
           >
@@ -241,6 +357,13 @@ export function TaskCard({ task, variant }: TaskCardProps) {
         task={task}
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
+      />
+
+      <SnoozeTaskDialog
+        taskId={task.id}
+        taskTitle={task.title}
+        open={showSnoozeDialog}
+        onOpenChange={setShowSnoozeDialog}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

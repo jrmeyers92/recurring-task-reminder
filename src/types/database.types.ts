@@ -181,6 +181,7 @@ export type Database = {
           notify_via: Database["public"]["Enums"]["notify_method"] | null;
           reminder_lead_time_days: number | null;
           snoozed_until: string | null;
+          paused: boolean;
           start_date: string;
           title: string;
           updated_at: string | null;
@@ -363,7 +364,7 @@ export type Database = {
     };
     Enums: {
       frequency_type: "daily" | "weekly" | "monthly" | "yearly" | "custom";
-      notify_method: "email" | "sms" | "both";
+      notify_method: "email" | "sms" | "both" | "none";
       task_category:
         | "home"
         | "vehicle"
@@ -507,7 +508,7 @@ export const Constants = {
   public: {
     Enums: {
       frequency_type: ["daily", "weekly", "monthly", "yearly", "custom"],
-      notify_method: ["email", "sms", "both"],
+      notify_method: ["email", "sms", "both", "none"],
       task_category: [
         "home",
         "vehicle",

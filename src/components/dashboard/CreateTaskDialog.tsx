@@ -323,6 +323,9 @@ export function CreateTaskDialog({
                       <SelectItem value="email">Email only</SelectItem>
                       <SelectItem value="sms">SMS only</SelectItem>
                       <SelectItem value="both">Both Email and SMS</SelectItem>
+                      <SelectItem value="none">
+                        No automated notifications
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
