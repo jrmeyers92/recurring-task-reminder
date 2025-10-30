@@ -23,10 +23,9 @@ import { ProfileInsert } from "@/types/database.types";
 import { useAuth, useSession } from "@clerk/nextjs";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect, useTransition } from "react";
+import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import * as z from "zod";
 import {
   onboardingFormSchema,
   OnboardingFormValues,
