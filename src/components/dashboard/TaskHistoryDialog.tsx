@@ -28,6 +28,7 @@ import { differenceInDays, format } from "date-fns";
 import {
   CheckCircle2,
   History,
+  Pause,
   Plus,
   Trash2,
   TrendingUp,
@@ -40,6 +41,13 @@ interface TaskCompletion {
   id: string;
   completed_at: string;
   notes: string | null;
+}
+
+interface TaskPause {
+  id: string;
+  paused_at: string;
+  resumed_at: string | null;
+  reason: string | null;
 }
 
 interface TaskHistoryDialogProps {
@@ -61,6 +69,7 @@ export function TaskHistoryDialog({
   userId,
 }: TaskHistoryDialogProps) {
   const [completions, setCompletions] = useState<TaskCompletion[]>([]);
+  const [pauses, setPauses] = useState<TaskPause[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -83,15 +92,28 @@ export function TaskHistoryDialog({
     setLoading(true);
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    // Load completions
+    const { data: completionsData, error: completionsError } = await supabase
       .from("task_scheduler_task_completions")
       .select("*")
       .eq("task_id", taskId)
       .order("completed_at", { ascending: false });
 
-    if (!error && data) {
-      setCompletions(data);
+    if (!completionsError && completionsData) {
+      setCompletions(completionsData);
     }
+
+    // Load pause history
+    const { data: pausesData, error: pausesError } = await supabase
+      .from("task_scheduler_task_pauses")
+      .select("*")
+      .eq("task_id", taskId)
+      .order("paused_at", { ascending: false });
+
+    if (!pausesError && pausesData) {
+      setPauses(pausesData);
+    }
+
     setLoading(false);
   }, [taskId]);
 
@@ -179,6 +201,7 @@ export function TaskHistoryDialog({
 
     setAddingCompletion(false);
   };
+
   const handleDeleteCompletion = async () => {
     if (!completionToDelete) return;
 
@@ -213,6 +236,7 @@ export function TaskHistoryDialog({
         expectedCompletions: 0,
         completionRate: 0,
         missedTasks: 0,
+        totalPausedDays: 0,
       };
     }
 
@@ -222,27 +246,31 @@ export function TaskHistoryDialog({
 
     const daysSinceStart = differenceInDays(today, startDate);
 
-    // TODO: Subtract snoozed/paused days from daysSinceStart
-    // This would require tracking snooze history, which you don't have yet
+    // Calculate total paused days
+    let totalPausedDays = 0;
+    pauses.forEach((pause) => {
+      const pausedAt = new Date(pause.paused_at);
+      const resumedAt = pause.resumed_at ? new Date(pause.resumed_at) : today;
+      totalPausedDays += differenceInDays(resumedAt, pausedAt);
+    });
+
+    // Subtract paused days from active days
+    const activeDays = Math.max(0, daysSinceStart - totalPausedDays);
 
     // Calculate expected completions based on frequency
     let expectedCompletions = 0;
     switch (frequencyType) {
       case "daily":
-        expectedCompletions = Math.floor(daysSinceStart / frequencyValue);
+        expectedCompletions = Math.floor(activeDays / frequencyValue);
         break;
       case "weekly":
-        expectedCompletions = Math.floor(daysSinceStart / (frequencyValue * 7));
+        expectedCompletions = Math.floor(activeDays / (frequencyValue * 7));
         break;
       case "monthly":
-        expectedCompletions = Math.floor(
-          daysSinceStart / (frequencyValue * 30)
-        );
+        expectedCompletions = Math.floor(activeDays / (frequencyValue * 30));
         break;
       case "yearly":
-        expectedCompletions = Math.floor(
-          daysSinceStart / (frequencyValue * 365)
-        );
+        expectedCompletions = Math.floor(activeDays / (frequencyValue * 365));
         break;
     }
 
@@ -250,6 +278,8 @@ export function TaskHistoryDialog({
     const completionRate =
       expectedCompletions > 0
         ? Math.round((actualCompletions / expectedCompletions) * 100)
+        : actualCompletions > 0
+        ? 100
         : 0;
     const missedTasks = Math.max(0, expectedCompletions - actualCompletions);
 
@@ -258,6 +288,7 @@ export function TaskHistoryDialog({
       expectedCompletions,
       completionRate,
       missedTasks,
+      totalPausedDays,
     };
   };
 
@@ -328,6 +359,20 @@ export function TaskHistoryDialog({
                   </div>
                 </div>
               </div>
+
+              {/* Paused Days Info */}
+              {stats.totalPausedDays > 0 && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Pause size={14} />
+                    <span>
+                      This task was paused for{" "}
+                      <strong>{stats.totalPausedDays} days</strong> (not counted
+                      in stats)
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Completion Badge */}
               <div className="flex items-center justify-center">
@@ -420,6 +465,50 @@ export function TaskHistoryDialog({
                   </div>
                 )}
               </div>
+
+              {/* Pause History */}
+              {pauses.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-3">Pause History</h3>
+                  <div className="space-y-2">
+                    {pauses.map((pause) => (
+                      <div
+                        key={pause.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Pause size={16} className="text-gray-600" />
+                          <div>
+                            <div className="font-medium text-sm">
+                              Paused: {format(new Date(pause.paused_at), "PPP")}
+                            </div>
+                            {pause.resumed_at ? (
+                              <div className="text-xs text-muted-foreground">
+                                Resumed:{" "}
+                                {format(new Date(pause.resumed_at), "PPP")}(
+                                {differenceInDays(
+                                  new Date(pause.resumed_at),
+                                  new Date(pause.paused_at)
+                                )}{" "}
+                                days)
+                              </div>
+                            ) : (
+                              <div className="text-xs text-orange-600">
+                                Currently paused
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {pause.reason && (
+                          <div className="text-sm text-muted-foreground italic max-w-xs truncate">
+                            {pause.reason}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Completion History */}
               <div>

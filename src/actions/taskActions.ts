@@ -292,19 +292,37 @@ export async function pauseTask(taskId: string) {
   }
 
   const supabase = await createAdminClient();
+  const now = new Date().toISOString();
 
-  const { error } = await supabase
+  // Update the task to paused status
+  const { error: updateError } = await supabase
     .from("task_scheduler_tasks")
     .update({
       paused: true,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     })
     .eq("id", taskId)
     .eq("user_id", userId);
 
-  if (error) {
-    console.error("Error pausing task:", error);
-    return { success: false, error: error.message };
+  if (updateError) {
+    console.error("Error pausing task:", updateError);
+    return { success: false, error: updateError.message };
+  }
+
+  // Record the pause in history table
+  const { error: pauseError } = await supabase
+    .from("task_scheduler_task_pauses")
+    .insert({
+      task_id: taskId,
+      user_id: userId,
+      paused_at: now,
+      resumed_at: null,
+      reason: null,
+    });
+
+  if (pauseError) {
+    console.error("Error recording pause:", pauseError);
+    // Don't fail the operation if history recording fails
   }
 
   revalidatePath("/dashboard");
@@ -319,19 +337,42 @@ export async function resumeTask(taskId: string) {
   }
 
   const supabase = await createAdminClient();
+  const now = new Date().toISOString();
 
-  const { error } = await supabase
+  // Update the task to active status
+  const { error: updateError } = await supabase
     .from("task_scheduler_tasks")
     .update({
       paused: false,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     })
     .eq("id", taskId)
     .eq("user_id", userId);
 
-  if (error) {
-    console.error("Error resuming task:", error);
-    return { success: false, error: error.message };
+  if (updateError) {
+    console.error("Error resuming task:", updateError);
+    return { success: false, error: updateError.message };
+  }
+
+  // Update the most recent pause record with resume time
+  const { data: pauseRecords, error: fetchError } = await supabase
+    .from("task_scheduler_task_pauses")
+    .select("id")
+    .eq("task_id", taskId)
+    .eq("user_id", userId)
+    .is("resumed_at", null)
+    .order("paused_at", { ascending: false })
+    .limit(1);
+
+  if (!fetchError && pauseRecords && pauseRecords.length > 0) {
+    const { error: resumeError } = await supabase
+      .from("task_scheduler_task_pauses")
+      .update({ resumed_at: now })
+      .eq("id", pauseRecords[0].id);
+
+    if (resumeError) {
+      console.error("Error recording resume:", resumeError);
+    }
   }
 
   revalidatePath("/dashboard");
