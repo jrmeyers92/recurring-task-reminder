@@ -43,6 +43,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { EditTaskDialog } from "./EditTaskDialog";
+import { TaskHistoryDialog } from "./TaskHistoryDialog";
 
 interface TaskCardProps {
   task: Task;
@@ -214,16 +215,23 @@ export function TaskCard({ task, variant }: TaskCardProps) {
               )}
           </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex gap-2">
           <Button
             onClick={handleComplete}
             disabled={isPending}
-            className="w-full"
+            className="flex-1"
             variant={variant === "overdue" ? "destructive" : "default"}
           >
             <CheckCircle2 size={16} className="mr-2" />
             {isPending ? "Completing..." : "Mark Complete"}
           </Button>
+          <TaskHistoryDialog
+            taskId={task.id}
+            taskTitle={task.title}
+            taskStartDate={task.start_date}
+            frequencyType={task.frequency_type}
+            frequencyValue={task.frequency_value}
+          />
         </CardFooter>
       </Card>
 
