@@ -231,6 +231,8 @@ export function TaskCard({ task, variant }: TaskCardProps) {
             taskStartDate={task.start_date}
             frequencyType={task.frequency_type}
             frequencyValue={task.frequency_value}
+            userId={task.user_id}
+            dayOfMonth={task.day_of_month}
           />
         </CardFooter>
       </Card>
