@@ -15,6 +15,7 @@ export async function createTask(taskData: {
   frequency_type: string;
   frequency_value: number;
   day_of_month?: number | null;
+  days_of_week?: number[]; // NEW: array instead of single day
   start_date: string;
   notify_via: string;
   category: string;
@@ -29,8 +30,57 @@ export async function createTask(taskData: {
 
     const supabase = await createAdminClient();
 
-    // Calculate next_due_date (same as start_date initially)
-    const next_due_date = taskData.start_date;
+    // Calculate next_due_date based on frequency type
+    let next_due_date = taskData.start_date;
+
+    if (taskData.frequency_type === "monthly" && taskData.day_of_month) {
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+      const currentDay = today.getDate();
+
+      let nextDue = new Date(currentYear, currentMonth, taskData.day_of_month);
+
+      if (currentDay > taskData.day_of_month) {
+        nextDue = new Date(
+          currentYear,
+          currentMonth + 1,
+          taskData.day_of_month
+        );
+      }
+
+      next_due_date = nextDue.toISOString().split("T")[0];
+    } else if (
+      taskData.frequency_type === "weekly" &&
+      taskData.days_of_week &&
+      taskData.days_of_week.length > 0
+    ) {
+      // NEW: Handle multiple days of week
+      const today = new Date();
+      const currentDayOfWeek = today.getDay();
+
+      // Sort days and find the next occurrence
+      const sortedDays = [...taskData.days_of_week].sort((a, b) => a - b);
+
+      // Find next day this week
+      let nextDay = sortedDays.find((day) => day > currentDayOfWeek);
+
+      // If no day found this week, use first day next week
+      if (nextDay === undefined) {
+        nextDay = sortedDays[0];
+      }
+
+      // Calculate days until target
+      let daysUntilTarget = nextDay - currentDayOfWeek;
+      if (daysUntilTarget <= 0) {
+        daysUntilTarget += 7;
+      }
+
+      const nextDue = new Date(today);
+      nextDue.setDate(today.getDate() + daysUntilTarget);
+
+      next_due_date = nextDue.toISOString().split("T")[0];
+    }
 
     const { error } = await supabase.from("task_scheduler_tasks").insert({
       user_id: userId,
@@ -39,6 +89,7 @@ export async function createTask(taskData: {
       frequency_type: taskData.frequency_type,
       frequency_value: taskData.frequency_value,
       day_of_month: taskData.day_of_month || null,
+      days_of_week: taskData.days_of_week || null, // NEW
       start_date: taskData.start_date,
       next_due_date: next_due_date,
       notify_via: taskData.notify_via,
@@ -174,6 +225,7 @@ export async function updateTask(
     frequency_type: string;
     frequency_value: number;
     day_of_month?: number | null;
+    days_of_week?: number[]; // NEW
     start_date: string;
     notify_via: string;
     category: string;
@@ -201,6 +253,60 @@ export async function updateTask(
       return { success: false, error: "Task not found" };
     }
 
+    // Calculate next_due_date if frequency settings changed
+    let next_due_date = existingTask.next_due_date;
+
+    // Recalculate next_due_date if monthly with day_of_month
+    if (taskData.frequency_type === "monthly" && taskData.day_of_month) {
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+      const currentDay = today.getDate();
+
+      let nextDue = new Date(currentYear, currentMonth, taskData.day_of_month);
+
+      if (currentDay > taskData.day_of_month) {
+        nextDue = new Date(
+          currentYear,
+          currentMonth + 1,
+          taskData.day_of_month
+        );
+      }
+
+      next_due_date = nextDue.toISOString().split("T")[0];
+    }
+    // Recalculate next_due_date if weekly with days_of_week
+    else if (
+      taskData.frequency_type === "weekly" &&
+      taskData.days_of_week &&
+      taskData.days_of_week.length > 0
+    ) {
+      const today = new Date();
+      const currentDayOfWeek = today.getDay();
+
+      // Sort days and find the next occurrence
+      const sortedDays = [...taskData.days_of_week].sort((a, b) => a - b);
+
+      // Find next day this week
+      let nextDay = sortedDays.find((day) => day > currentDayOfWeek);
+
+      // If no day found this week, use first day next week
+      if (nextDay === undefined) {
+        nextDay = sortedDays[0];
+      }
+
+      // Calculate days until target
+      let daysUntilTarget = nextDay - currentDayOfWeek;
+      if (daysUntilTarget <= 0) {
+        daysUntilTarget += 7;
+      }
+
+      const nextDue = new Date(today);
+      nextDue.setDate(today.getDate() + daysUntilTarget);
+
+      next_due_date = nextDue.toISOString().split("T")[0];
+    }
+
     const { error } = await supabase
       .from("task_scheduler_tasks")
       .update({
@@ -209,7 +315,9 @@ export async function updateTask(
         frequency_type: taskData.frequency_type,
         frequency_value: taskData.frequency_value,
         day_of_month: taskData.day_of_month || null,
+        days_of_week: taskData.days_of_week || null, // NEW
         start_date: taskData.start_date,
+        next_due_date: next_due_date, // NEW: update next_due_date
         notify_via: taskData.notify_via,
         category: taskData.category,
         reminder_lead_time_days: taskData.reminder_lead_time_days || null,

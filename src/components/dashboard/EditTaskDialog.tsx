@@ -2,6 +2,7 @@
 
 import { updateTask } from "@/actions/taskActions";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ const taskFormSchema = z.object({
   frequency_type: z.enum(Constants.public.Enums.frequency_type),
   frequency_value: z.number().min(1).max(365),
   day_of_month: z.union([z.number().min(1).max(31), z.null()]).optional(),
+  days_of_week: z.array(z.number().min(0).max(6)).optional(), // NEW
   start_date: z.string().min(1, "Start date is required"),
   notify_via: z.enum(Constants.public.Enums.notify_method),
   category: z.enum(Constants.public.Enums.task_category),
@@ -56,6 +58,16 @@ interface EditTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const DAYS_OF_WEEK = [
+  { value: 0, label: "Sunday", short: "Sun" },
+  { value: 1, label: "Monday", short: "Mon" },
+  { value: 2, label: "Tuesday", short: "Tue" },
+  { value: 3, label: "Wednesday", short: "Wed" },
+  { value: 4, label: "Thursday", short: "Thu" },
+  { value: 5, label: "Friday", short: "Fri" },
+  { value: 6, label: "Saturday", short: "Sat" },
+];
 
 export function EditTaskDialog({
   task,
@@ -73,6 +85,7 @@ export function EditTaskDialog({
       frequency_type: task.frequency_type,
       frequency_value: task.frequency_value,
       day_of_month: task.day_of_month,
+      days_of_week: task.days_of_week || [], // NEW
       start_date: task.start_date,
       notify_via: task.notify_via || "email",
       category: task.category || "other",
@@ -89,6 +102,7 @@ export function EditTaskDialog({
         frequency_type: task.frequency_type,
         frequency_value: task.frequency_value,
         day_of_month: task.day_of_month,
+        days_of_week: task.days_of_week || [], // NEW
         start_date: task.start_date,
         notify_via: task.notify_via || "email",
         category: task.category || "other",
@@ -218,7 +232,6 @@ export function EditTaskDialog({
                         <SelectItem value="weekly">Weekly</SelectItem>
                         <SelectItem value="monthly">Monthly</SelectItem>
                         <SelectItem value="yearly">Yearly</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -248,6 +261,53 @@ export function EditTaskDialog({
                 )}
               />
             </div>
+
+            {/* NEW: Multi-select days of week for weekly tasks */}
+            {frequencyType === "weekly" && (
+              <FormField
+                control={form.control}
+                name="days_of_week"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Days of Week (Optional)</FormLabel>
+                    <div className="grid grid-cols-7 gap-2">
+                      {DAYS_OF_WEEK.map((day) => (
+                        <FormItem
+                          key={day.value}
+                          className="flex flex-col items-center space-y-2"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(day.value)}
+                              onCheckedChange={(checked) => {
+                                const currentDays = field.value || [];
+                                if (checked) {
+                                  field.onChange(
+                                    [...currentDays, day.value].sort()
+                                  );
+                                } else {
+                                  field.onChange(
+                                    currentDays.filter((d) => d !== day.value)
+                                  );
+                                }
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-xs font-normal cursor-pointer">
+                            {day.short}
+                          </FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
+                    <FormDescription>
+                      Select specific days, or leave empty to repeat from
+                      completion date
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {frequencyType === "monthly" && (
               <FormField

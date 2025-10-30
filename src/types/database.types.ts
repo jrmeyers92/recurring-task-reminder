@@ -104,6 +104,72 @@ export type Database = {
           }
         ];
       };
+      task_scheduler_task_pauses: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          paused_at: string;
+          reason: string | null;
+          resumed_at: string | null;
+          task_id: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          paused_at?: string;
+          reason?: string | null;
+          resumed_at?: string | null;
+          task_id?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          paused_at?: string;
+          reason?: string | null;
+          resumed_at?: string | null;
+          task_id?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "task_scheduler_task_pauses_task_id_fkey";
+            columns: ["task_id"];
+            isOneToOne: false;
+            referencedRelation: "task_scheduler_overdue_tasks";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "task_scheduler_task_pauses_task_id_fkey";
+            columns: ["task_id"];
+            isOneToOne: false;
+            referencedRelation: "task_scheduler_tasks";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "task_scheduler_task_pauses_task_id_fkey";
+            columns: ["task_id"];
+            isOneToOne: false;
+            referencedRelation: "task_scheduler_tasks_due_today";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "task_scheduler_task_pauses_task_id_fkey";
+            columns: ["task_id"];
+            isOneToOne: false;
+            referencedRelation: "task_scheduler_upcoming_tasks";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "task_scheduler_task_pauses_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "task_scheduler_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       task_scheduler_task_tags: {
         Row: {
           created_at: string | null;
@@ -171,6 +237,8 @@ export type Database = {
           completion_token: string | null;
           created_at: string | null;
           day_of_month: number | null;
+          day_of_week: number | null;
+          days_of_week: number[] | null;
           description: string | null;
           frequency_type: Database["public"]["Enums"]["frequency_type"];
           frequency_value: number;
@@ -179,9 +247,9 @@ export type Database = {
           last_notified_at: string | null;
           next_due_date: string;
           notify_via: Database["public"]["Enums"]["notify_method"] | null;
+          paused: boolean | null;
           reminder_lead_time_days: number | null;
           snoozed_until: string | null;
-          paused: boolean;
           start_date: string;
           title: string;
           updated_at: string | null;
@@ -193,6 +261,8 @@ export type Database = {
           completion_token?: string | null;
           created_at?: string | null;
           day_of_month?: number | null;
+          day_of_week?: number | null;
+          days_of_week?: number[] | null;
           description?: string | null;
           frequency_type: Database["public"]["Enums"]["frequency_type"];
           frequency_value: number;
@@ -201,6 +271,7 @@ export type Database = {
           last_notified_at?: string | null;
           next_due_date: string;
           notify_via?: Database["public"]["Enums"]["notify_method"] | null;
+          paused?: boolean | null;
           reminder_lead_time_days?: number | null;
           snoozed_until?: string | null;
           start_date: string;
@@ -214,6 +285,8 @@ export type Database = {
           completion_token?: string | null;
           created_at?: string | null;
           day_of_month?: number | null;
+          day_of_week?: number | null;
+          days_of_week?: number[] | null;
           description?: string | null;
           frequency_type?: Database["public"]["Enums"]["frequency_type"];
           frequency_value?: number;
@@ -222,6 +295,7 @@ export type Database = {
           last_notified_at?: string | null;
           next_due_date?: string;
           notify_via?: Database["public"]["Enums"]["notify_method"] | null;
+          paused?: boolean | null;
           reminder_lead_time_days?: number | null;
           snoozed_until?: string | null;
           start_date?: string;
@@ -355,7 +429,7 @@ export type Database = {
       task_scheduler_calculate_next_due_date: {
         Args: {
           p_day_of_month?: number;
-          p_frequency_type: string;
+          p_frequency_type: Database["public"]["Enums"]["frequency_type"];
           p_frequency_value: number;
           p_last_completed: string;
         };
@@ -363,7 +437,7 @@ export type Database = {
       };
     };
     Enums: {
-      frequency_type: "daily" | "weekly" | "monthly" | "yearly" | "custom";
+      frequency_type: "daily" | "weekly" | "monthly" | "yearly";
       notify_method: "email" | "sms" | "both" | "none";
       task_category:
         | "home"
@@ -507,7 +581,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      frequency_type: ["daily", "weekly", "monthly", "yearly", "custom"],
+      frequency_type: ["daily", "weekly", "monthly", "yearly"],
       notify_method: ["email", "sms", "both", "none"],
       task_category: [
         "home",

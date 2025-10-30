@@ -83,7 +83,7 @@ export default function Home() {
             <FeatureCard
               icon={<Calendar size={32} />}
               title="Create Your Tasks"
-              description="Add any recurring task with your preferred frequency - daily, weekly, monthly, or custom intervals."
+              description="Add any recurring task with your preferred frequency - daily, weekly, monthly, or yearly intervals."
             />
 
             <FeatureCard

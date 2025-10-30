@@ -91,20 +91,26 @@ export function TaskCard({ task, variant }: TaskCardProps) {
   const isPaused = !!task.paused;
 
   const getFrequencyText = () => {
-    const { frequency_type, frequency_value } = task;
+    const { frequency_type, frequency_value, days_of_week } = task;
     const singular = frequency_value === 1;
+
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     switch (frequency_type) {
       case "daily":
         return singular ? "Daily" : `Every ${frequency_value} days`;
       case "weekly":
-        return singular ? "Weekly" : `Every ${frequency_value} weeks`;
+        const weekText = singular ? "Weekly" : `Every ${frequency_value} weeks`;
+        if (days_of_week && days_of_week.length > 0) {
+          const sortedDays = [...days_of_week].sort((a, b) => a - b);
+          const dayText = sortedDays.map((d) => dayNames[d]).join(", ");
+          return `${weekText} on ${dayText}`;
+        }
+        return weekText;
       case "monthly":
         return singular ? "Monthly" : `Every ${frequency_value} months`;
       case "yearly":
         return singular ? "Yearly" : `Every ${frequency_value} years`;
-      case "custom":
-        return `Every ${frequency_value} days`;
       default:
         return "";
     }
